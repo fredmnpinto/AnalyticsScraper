@@ -2,3 +2,4 @@ tqdm==4.67.1
 SQLAlchemy==2.0.37
 python-dotenv==1.0.0
 psycopg2==2.9.10
+pyjstat~=2.4.0

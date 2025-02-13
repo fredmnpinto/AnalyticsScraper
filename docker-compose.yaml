@@ -1,4 +1,14 @@
 services:
+  scraper:
+    build: .
+    depends_on:
+      - db
+    environment:
+      DB_USER: postgres
+      DB_PASSWORD: example
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: analysis-dev
   db:
     image: postgres
     restart: always
@@ -8,7 +18,7 @@ services:
       POSTGRES_PASSWORD: example
       POSTGRES_DB: analysis-dev
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data_sources
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 1s

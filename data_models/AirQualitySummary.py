@@ -1,17 +1,7 @@
-import csv
-import os
-from dotenv import load_dotenv
-
-from tqdm import tqdm
-from sqlalchemy import create_engine, ForeignKey, Column, String, Integer, CHAR, Float
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-
-Base = declarative_base()
-
+from data_models import *
 
 # From WHO yearly summary database
-class AirQualitySummary(Base):
+class AirQualitySummary(Base, DataModel):
     __tablename__ = 'air_quality_summaries'
 
     id = Column(Integer, primary_key=True)
@@ -24,6 +14,12 @@ class AirQualitySummary(Base):
     pm10_tempcov = Column('pm10_tempcov', Float)
     pm25_tempcov = Column('pm25_tempcov', Float)
     no2_tempcov = Column('no2_tempcov', Float)
+
+    CSV_LOCATION = 'data_sources/csv/who_air_quality_version_2024.csv'
+
+    __table_args__ = (
+        Index('ix_summary_country_name_year_city', 'country_name', 'year', 'city', unique=True),  # Unique index
+    )
 
     def __init__(
             self,
@@ -48,21 +44,26 @@ class AirQualitySummary(Base):
         self.no2_tempcov = no2_tempcov
 
     @staticmethod
-    def extract_from_csv(file_path: str, db_session):
+    def load_all(database_session):
+        AirQualitySummary.load_from_csv(AirQualitySummary.CSV_LOCATION, database_session)
+
+    @staticmethod
+    def load_from_csv(file_path: str, db_session):
         with open(file_path, encoding='utf-8') as csv_file:
             lines = len(csv_file.readlines())
             csv_data = csv.DictReader(csv_file)
 
             csv_file.seek(0)
 
-            new_summaries = []
+            loaded_entries = []
 
-            for row in tqdm(csv_data, total=lines, desc="Reading data"):
+            print(f"Reading {lines} lines of data...")
+            for row in csv_data:
                 for key in row:
                     if row[key] == 'NA':
                         row[key] = None
 
-                new_summaries.append(
+                loaded_entries.append(
                     AirQualitySummary(
                     row['year'],
                     row['city'],
@@ -75,16 +76,10 @@ class AirQualitySummary(Base):
                     row['no2_tempcov'].replace('.', '').replace(',', '.') if row['no2_tempcov'] is not None else None)
                 )
 
-            print("Writting new data to database...")
-            db_session.add_all(new_summaries)
-            db_session.commit()
+            print("Writting to database...")
+            AirQualitySummary.write_to_database(loaded_entries, db_session)
             print("Done!")
 
 if __name__ == "__main__":
-    load_dotenv()
-
-    engine = create_engine(os.environ['DATABASE_URL'])
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-
-    AirQualitySummary.extract_from_csv('data/who_air_quality_version_2024.csv', Session())
+    new_database_session = setup_database()
+    AirQualitySummary.load_from_csv(AirQualitySummary.CSV_LOCATION, new_database_session)
