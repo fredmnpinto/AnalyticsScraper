@@ -76,8 +76,8 @@ class AirQualitySummary(Base, DataModel):
                     row['no2_tempcov'].replace('.', '').replace(',', '.') if row['no2_tempcov'] is not None else None)
                 )
 
-            print("Writting to database...")
-            AirQualitySummary.write_to_database(loaded_entries, db_session)
+            print("Writing to database...")
+            AirQualitySummary.reset_database_to(loaded_entries, db_session)
             print("Done!")
 
 if __name__ == "__main__":

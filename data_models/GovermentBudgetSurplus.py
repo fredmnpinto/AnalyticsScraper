@@ -32,7 +32,7 @@ class GovermentBudgetSurplus(Base, DataModel):
         loaded_entries = []
         total_lines = len(df)
 
-        print(f"Reading {total_lines} lines of data...")
+        print(f"Reading {total_lines} bytes of data...")
         for index, row in df.iterrows():
             country = row['Geopolitical entity (reporting)']
             year = row['Time']
@@ -41,7 +41,7 @@ class GovermentBudgetSurplus(Base, DataModel):
             if not isnan(value):
                 loaded_entries.append(GovermentBudgetSurplus(year, country, value))
 
-        GovermentBudgetSurplus.write_to_database(loaded_entries, db_session)
+        GovermentBudgetSurplus.reset_database_to(loaded_entries, db_session)
 
         print('Done!')
 
